@@ -34,6 +34,8 @@ public class ProjectSecurityConfig {
 				.requestMatchers("/addRelays").authenticated()
 				.requestMatchers("/actuallog").authenticated()
 				.requestMatchers("/otherlog").authenticated()
+				.requestMatchers("/getBatchTimes").authenticated()
+				.requestMatchers("/postBatchTimes").authenticated()
 				.requestMatchers("/backgroundProcess").authenticated());
 		http.httpBasic(Customizer.withDefaults());
 		return http.build();
@@ -57,7 +59,7 @@ public class ProjectSecurityConfig {
     UrlBasedCorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration config = new CorsConfiguration();
 
-		config.setAllowedOrigins(List.of("https://pedicure.wimroukema.nl", "https://linode.wimroukema.nl", "https://proposal.wimroukema.nl"));
+		config.setAllowedOrigins(List.of("https://wimroukema.nl", "https://vps.wimroukema.nl", "https://linode.wimroukema.nl", "https://tennis.wimroukema.nl"));
 
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 

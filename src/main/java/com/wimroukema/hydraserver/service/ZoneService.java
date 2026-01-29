@@ -25,10 +25,11 @@ public class ZoneService implements Runnable {
 				return;
 			}
 			try {
-				while (relay.getRunLeft() > 0) {
-					Thread.sleep(1000);
-					relay.setRunLeft(relay.getRunLeft() - 1);
-				}
+//				while (relay.getRunLeft() > 0) {
+//					Thread.sleep(1000);
+//					relay.setRunLeft(relay.getRunLeft() - 1);
+//				}
+				Thread.sleep(relay.getRun()*1000);
 				relay.setActive(9);
 				LocalDateTime ldt = LocalDateTime.now();
 				relay.setStoppedOn(ldt.toEpochSecond(ZoneOffset.UTC));

@@ -3,12 +3,14 @@ package com.wimroukema.hydraserver.service;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wimroukema.hydraserver.model.BatchTimeList;
 import com.wimroukema.hydraserver.model.LogMessage;
 import com.wimroukema.hydraserver.model.Relay;
 import com.wimroukema.hydraserver.model.RelayList;
@@ -78,24 +80,31 @@ public class FileService {
 		BufferedReader reader = new BufferedReader(new FileReader(logPath + filename));
 		return this.getLogMessages(reader);
 	}
-	public int[] getBatchtimes() throws Exception {
+	public String[] getBatchtimes() throws Exception {
 		File file = new File(batchtimes);
 		BufferedReader reader = new BufferedReader(new FileReader(file));
 		String line = null;
 		StringBuffer sb = new StringBuffer();
 		while ((line = reader.readLine()) != null) {
-			// sb.append(line.replaceAll("\\s+", ""));
 			sb.append(line.trim());
 		}
 		reader.close();
 		String regex = "[;\s]";
 		String[] arr = sb.toString().split(regex);
-		int[] times = new int[arr.length];
+		String[] times = new String[arr.length];
 		int i = 0;
 		for (String time : arr) {
-			times[i] = Integer.valueOf(time);
+			times[i] = time;
+			i++;
 		}
 		return times;
+	}
+	public void saveBatchTimes(BatchTimeList list) throws Exception {
+		String csv = list.toCsv();
+		FileWriter writer = new FileWriter(new File(batchtimes));
+		writer.write(csv);
+		writer.flush();
+		writer.close();
 	}
 
 	private ArrayList<LogMessage> getLogMessages(BufferedReader reader) throws Exception {

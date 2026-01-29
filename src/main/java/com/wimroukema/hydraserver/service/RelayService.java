@@ -241,6 +241,10 @@ public class RelayService {
 						relay.setStartPlanned(ldt.toEpochSecond(ZoneOffset.UTC));
 						relay.setRunLeft(relay.getRun());
 						runLeft = relay.getRunLeft();
+					} else {
+						int n = (int)(ldt.toEpochSecond(ZoneOffset.UTC) - relay.getStartedOn());
+						relay.setRunLeft(relay.getRun() - n);
+						runLeft = relay.getRunLeft();
 					}
 				} else {
 					relay.setRunLeft(relay.getRun());
@@ -278,17 +282,22 @@ public class RelayService {
 //					System.err.println("Error occurred: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
 //				})
 				.block();
-
+		System.out.println(resp);
 		ObjectMapper mapper = new ObjectMapper();
 		HydraResponse hydraResponse;
 		try {
 			hydraResponse = mapper.readValue(resp, HydraResponse.class);
 		} catch (JsonMappingException e) {
+			e.printStackTrace();
+			System.out.println(e.toString());
 			throw new Exception("Exception in Hunter server");
 		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+			System.out.println(e.toString());
 			throw new Exception("Exception in Hunter server");
 		}
 		if (hydraResponse.getMessageType().equals("error")) {
+			System.out.println(hydraResponse.getMessageType());
 			throw new Exception("Exception in Hunter server");
 		}
 	}

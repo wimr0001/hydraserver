@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.wimroukema.hydraserver.model.BatchTime;
+import com.wimroukema.hydraserver.model.BatchTimeList;
+import com.wimroukema.hydraserver.model.BatchTimeRequest;
 import com.wimroukema.hydraserver.model.LogMessage;
 import com.wimroukema.hydraserver.model.Relay;
 import com.wimroukema.hydraserver.model.WateringRequest;
@@ -235,41 +238,55 @@ public class GeneralController {
 	}
 
 	@GetMapping(path = "/backgroundProcess", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<String> backGroundProcess(@RequestParam String runTime) {
+	public ResponseEntity<String> backGroundProcess() {
+		if (relayService.isActive()) {
+			return ResponseEntity.status(HttpStatus.OK).body("Er loopt al een sproeiproces");
+		}
 		LocalDateTime ldt = LocalDateTime.now();
 		int h = ldt.getHour();
-		int m = ldt.getMonthValue();
+		int m = ldt.getMinute();
 		try {
 			String result = "OK";
-			int[] batchtimes = fileService.getBatchtimes(); // from 0 - 7
+			String[] batchtimes = fileService.getBatchtimes();
+			// from 0 - 23
 			// 1 = whole hour
 			// 2 = after 15 minutes 3 = after 30 minutes and 4 = after 45 minutes
+			// and -0 : default time -1-5 time in minutes -99 blocked
 			if (h >= batchtimes.length) {
-				result = "Not executed";
+				result = "Timestamp out of range";
 				return ResponseEntity.status(HttpStatus.OK).body(result);
 			}
-			if (batchtimes[h] == 0) {
-				result = "Not executed";
+
+			String regex = "[-\s]";
+			String[] arr = batchtimes[h].split(regex);
+			int timeCode = Integer.valueOf(arr[0]);
+			int run = Integer.valueOf(arr[1]);
+			if (run == 99 && timeCode > 0) {
+				result = "Execution blocked";
+				return ResponseEntity.status(HttpStatus.OK).body(result);
+			}
+			if (timeCode == 0) {
+				result = "Must not execute";
 			}
 			boolean mustExecute = false;
-			switch (batchtimes[h]) {
+			switch (timeCode) {
 			case 1: {
 				if (m <= 15) {
 					mustExecute = true;
 				}
 			}
 			case 2: {
-				if (m > 15 && m <= 30) {
+				if (m >= 15 && m <= 30) {
 					mustExecute = true;
 				}
 			}
 			case 3: {
-				if (m > 30 && m <= 45) {
+				if (m >= 30 && m <= 45) {
 					mustExecute = true;
 				}
 			}
 			case 4: {
-				if (m > 45) {
+				if (m >= 45) {
 					mustExecute = true;
 				}
 			}
@@ -278,20 +295,17 @@ public class GeneralController {
 			if (!mustExecute) {
 				result = "Not executed";
 			}
-			if (relayService.isActive()) {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Process already active");
-			}
 			ArrayList<Relay> list = fileService.getRelayList();
-			int run = Integer.valueOf(runTime);
-			if (run > 0) {
-				run = Math.min(300, run);
+			int duration = 0;
+			if (run > 0 && run < 6) {
+				duration = run * 60;
 			}
 			if (!result.equals("OK")) {
 				return ResponseEntity.status(HttpStatus.OK).body(result);
 			}
 			for (Relay relay : list) {
-				if (run > 0) {
-					relay.setRun(run);
+				if (duration > 0) {
+					relay.setRun(duration);
 				}
 				relay.setActive(1);
 			}
@@ -303,7 +317,49 @@ public class GeneralController {
 			return ResponseEntity.status(HttpStatus.OK).body(result);
 		} catch (Exception e) {
 			 e.printStackTrace();
+			 System.out.println(e.toString());
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Process in error");
 		}
 	}
+	@GetMapping(path = "/getBatchTimes", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<BatchTimeList> getBatchTimes() {
+		try {
+			String[] batchTimes = fileService.getBatchtimes();
+			BatchTimeList timeList = new BatchTimeList();
+			ArrayList<BatchTime> list = new ArrayList(7);
+			BatchTime time =  null;
+			String regex = "[-s]";
+			int i = 0;
+			for (String str : batchTimes) {
+				String[] arr = str.split(regex);
+				int timeCode = Integer.valueOf(arr[0]);
+				int run = Integer.valueOf(arr[1]);
+				time = new BatchTime();
+				time.setHour(i);
+				time.setMinuteCode(timeCode);
+				time.setRun(run);
+				list.add(time);
+				i++;
+			}
+			timeList.setBatchTimeList(list);
+			return ResponseEntity.status(HttpStatus.OK).body(timeList);
+		} catch (Exception e) {
+			 e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new BatchTimeList());
+		}
+	}
+	
+	@PostMapping(path = "/postBatchTimes", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> postBatchTimes(@RequestBody BatchTimeRequest request) {
+		try {
+			String result = "OK";
+			BatchTimeList list = new BatchTimeList();
+			list.setBatchTimeList(request.getBatchTimes());
+			fileService.saveBatchTimes(list);
+			return ResponseEntity.status(HttpStatus.OK).body(result);
+		} catch (Exception e) {
+			 e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NOK");
+		}
+	}	
 }

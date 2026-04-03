@@ -22,6 +22,7 @@ import com.wimroukema.hydraserver.model.BatchTimeList;
 import com.wimroukema.hydraserver.model.BatchTimeRequest;
 import com.wimroukema.hydraserver.model.LogMessage;
 import com.wimroukema.hydraserver.model.Relay;
+import com.wimroukema.hydraserver.model.RelayList;
 import com.wimroukema.hydraserver.model.WateringRequest;
 import com.wimroukema.hydraserver.service.FileService;
 import com.wimroukema.hydraserver.service.RelayService;
@@ -44,16 +45,20 @@ public class GeneralController {
 	public ResponseEntity<Map<String, Object>> status(@RequestBody WateringRequest request) {
 		Map<String, Object> map = new HashMap<String, Object>(6);
 		try {
-			String relays = fileService.getRelaysInput();
-			map.put("relays", relays);
+			ArrayList<Relay> list = fileService.getAllRelays().removeSuspendedRelays();
+			map.put("relays", fileService.getRelaysAsJsonString(list));
 			String groups = fileService.getGroupsInput();
 			map.put("groups", groups);
 			map.put("active_relays", relayService.getActiveRelays());
-			map.put("username", relayService.getUsername());
+			if (relayService.getActiveRelays().size() == 0) {
+				map.put("username", request.getUsername());
+			} else {
+				map.put("username", relayService.getUsername());
+			}
 			map.put("errormsg", "");
 			return ResponseEntity.status(HttpStatus.OK).body(map);
 		} catch (Exception e) {
-			// e.printStackTrace();
+			 e.printStackTrace();
 			map.put("errormsg", "Opvragen informatie is mislukt");
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 		}
@@ -74,7 +79,7 @@ public class GeneralController {
 			map.put("errormsg", "");
 			return ResponseEntity.status(HttpStatus.OK).body(map);
 		} catch (Exception e) {
-			// e.printStackTrace();
+			e.printStackTrace();
 			map.put("errormsg", "Starten van sproeien is mislukt");
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 		}
@@ -144,8 +149,8 @@ public class GeneralController {
 		Map<String, Object> map = new HashMap<String, Object>(6);
 		try {
 			relayService.clear();
-			String relays = fileService.getRelaysInput();
-			map.put("relays", relays);
+			ArrayList<Relay> list = fileService.getAllRelays().removeSuspendedRelays();
+			map.put("relays", fileService.getRelaysAsJsonString(list));
 			String groups = fileService.getGroupsInput();
 			map.put("groups", groups);
 			map.put("active_relays", "");
@@ -295,14 +300,15 @@ public class GeneralController {
 			if (!mustExecute) {
 				result = "Not executed";
 			}
-			ArrayList<Relay> list = fileService.getRelayList();
+			if (!result.equals("OK")) {
+				return ResponseEntity.status(HttpStatus.OK).body(result);
+			}
+			ArrayList<Relay> list = fileService.getAllRelays().removeSuspendedRelays();
 			int duration = 0;
 			if (run > 0 && run < 6) {
 				duration = run * 60;
 			}
-			if (!result.equals("OK")) {
-				return ResponseEntity.status(HttpStatus.OK).body(result);
-			}
+
 			for (Relay relay : list) {
 				if (duration > 0) {
 					relay.setRun(duration);
@@ -316,18 +322,19 @@ public class GeneralController {
 			relayService.startProcess();
 			return ResponseEntity.status(HttpStatus.OK).body(result);
 		} catch (Exception e) {
-			 e.printStackTrace();
-			 System.out.println(e.toString());
+			e.printStackTrace();
+			System.out.println(e.toString());
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Process in error");
 		}
 	}
+
 	@GetMapping(path = "/getBatchTimes", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<BatchTimeList> getBatchTimes() {
 		try {
 			String[] batchTimes = fileService.getBatchtimes();
 			BatchTimeList timeList = new BatchTimeList();
 			ArrayList<BatchTime> list = new ArrayList(7);
-			BatchTime time =  null;
+			BatchTime time = null;
 			String regex = "[-s]";
 			int i = 0;
 			for (String str : batchTimes) {
@@ -344,11 +351,11 @@ public class GeneralController {
 			timeList.setBatchTimeList(list);
 			return ResponseEntity.status(HttpStatus.OK).body(timeList);
 		} catch (Exception e) {
-			 e.printStackTrace();
+			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new BatchTimeList());
 		}
 	}
-	
+
 	@PostMapping(path = "/postBatchTimes", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<String> postBatchTimes(@RequestBody BatchTimeRequest request) {
 		try {
@@ -358,8 +365,34 @@ public class GeneralController {
 			fileService.saveBatchTimes(list);
 			return ResponseEntity.status(HttpStatus.OK).body(result);
 		} catch (Exception e) {
-			 e.printStackTrace();
+			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NOK");
 		}
-	}	
+	}
+
+	@GetMapping(path = "/getRelays", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Map<String, Object>> getRelays() {
+		Map<String, Object> map = new HashMap<String, Object>(1);
+		try {
+			RelayList list = fileService.getAllRelays();
+			String json = fileService.getRelaysAsJsonString(list.getRelayList());
+			map.put("relays", json);
+			return ResponseEntity.status(HttpStatus.OK).body(map);
+		} catch (Exception e) {
+			// e.printStackTrace();
+			map.put("errormsg", "Opvragen relays is mislukt");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+		}
+	}
+
+	@PostMapping(path = "/storeRelays", produces = MediaType.TEXT_PLAIN_VALUE)
+	public ResponseEntity<String> storeRelays(@RequestBody String json) {
+		try {
+			fileService.storeRelays(json);
+			return ResponseEntity.status(HttpStatus.OK).body("OK");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NOK");
+		}
+	}
 }

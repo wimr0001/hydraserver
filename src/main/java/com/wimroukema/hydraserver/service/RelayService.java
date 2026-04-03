@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,14 +34,25 @@ public class RelayService {
 
 	@Autowired
 	WebClient webClient;
+	@Autowired
+	MailSenderImpl mailSender;
+
 	@Value("${file.log}")
 	private String logFile;
 	@Value("${file.error}")
 	private String errorFile;
+	@Value("${file.notification}")
+	private String notificationFile;
+	@Value("${rootUser}")
+	private String rootUser;
+	@Value("${batchUser}")
+	private String batchUser;
 	@Value("${zoneUrl}")
 	private String zoneUrl;
 	@Value("${apiKey}")
 	private String apiKey;
+	@Value("${notification_link}")
+	private String notificationLink;
 
 	private String username;
 	private List<Relay> relays = new ArrayList<Relay>(0);
@@ -50,6 +62,7 @@ public class RelayService {
 	private Thread thread;
 	private FileWriter writer;
 	private FileWriter errorWriter;
+	private int notificationNumber = 0;
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void onReady() {
@@ -85,6 +98,9 @@ public class RelayService {
 
 	public List<Relay> getActiveRelays() {
 		// active relays, adjust the runleft time
+		if (relays.size() == 0) {
+			return relays;
+		}
 		adjustRelayList();
 		for (Relay relay : relays) {
 			if (relay.getActive() == 2) {
@@ -103,6 +119,7 @@ public class RelayService {
 
 	public List<Relay> startProcess() throws Exception {
 		try {
+			this.writeNotificationFile();
 			this.setStartpoint();
 		} catch (Exception e) {
 			this.relays = new ArrayList<Relay>(0);
@@ -208,6 +225,7 @@ public class RelayService {
 		}
 		if (batch) {
 			relays = new ArrayList<Relay>(0);
+			username = "";
 		}
 		return relays;
 	}
@@ -222,11 +240,13 @@ public class RelayService {
 	protected void processEnded() {
 		if (batch) {
 			relays = new ArrayList<Relay>(0);
+			username = "";
 		}
 	}
 
 	public void clear() {
 		relays = new ArrayList<Relay>(0);
+		username = "";
 	}
 
 	public void adjustRelayList() {
@@ -242,7 +262,7 @@ public class RelayService {
 						relay.setRunLeft(relay.getRun());
 						runLeft = relay.getRunLeft();
 					} else {
-						int n = (int)(ldt.toEpochSecond(ZoneOffset.UTC) - relay.getStartedOn());
+						int n = (int) (ldt.toEpochSecond(ZoneOffset.UTC) - relay.getStartedOn());
 						relay.setRunLeft(relay.getRun() - n);
 						runLeft = relay.getRunLeft();
 					}
@@ -282,7 +302,6 @@ public class RelayService {
 //					System.err.println("Error occurred: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
 //				})
 				.block();
-		System.out.println(resp);
 		ObjectMapper mapper = new ObjectMapper();
 		HydraResponse hydraResponse;
 		try {
@@ -345,8 +364,14 @@ public class RelayService {
 	}
 
 	public boolean isActive() {
-		return (this.relays.size() > 0);
+		for (Relay relay : relays) {
+			if (relay.getActive() < 3) {
+				return true;
+			}
+		}
+		return false;
 	}
+
 	public void writeLogMessage(Relay relay, boolean start, boolean stopped) {
 		LogMessage lm = new LogMessage();
 		LocalDateTime ldt = LocalDateTime.now();
@@ -379,5 +404,34 @@ public class RelayService {
 			}
 		}
 		return null;
+	}
+
+	private void writeNotificationFile() throws Exception {
+//		if (username.equals(rootUser) || username.equals(batchUser)) {
+//			return;
+//		}
+		String fn = notificationFile.replace("{number}", Integer.toString(notificationNumber));
+		notificationNumber++;
+		FileWriter writer = new FileWriter(fn);
+		HashMap<String, String> map = new HashMap<String, String>(3);
+		map.put("title", "Opstarten sproeien door " + username);
+		StringBuffer sb = new StringBuffer();
+		sb.append("Banen: ");
+		for (Relay relay : relays) {
+			sb.append(relay.getName());
+			sb.append(",");
+		}
+		map.put("content", sb.toString());
+		map.put("link", notificationLink);
+		ObjectMapper objectMapper = new ObjectMapper();
+		String jacksonData = objectMapper.writeValueAsString(map);
+		writer.write(jacksonData);
+		writer.flush();
+		writer.close();
+		try {
+			mailSender.sendMail(sb.toString());
+		} catch (Exception e) {
+			// no mail sent, it's a pity but no serious proble
+		}
 	}
 }

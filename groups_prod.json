@@ -1,0 +1,136 @@
+{
+    "groups": [
+        {
+            "id": 1,
+            "name": "Banen 1 t/m 6",
+            "relay_ids": [
+                {
+                    "relay_id": 5365353
+                },
+                {
+                    "relay_id": 5365357
+                },
+                {
+                    "relay_id": 5365358
+                },
+                {
+                    "relay_id": 5365359
+                },
+                {
+                    "relay_id": 5365360
+                },
+                {
+                    "relay_id": 5365362
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "Banen 6 t/m 1",
+            "relay_ids": [
+                {
+                    "relay_id": 5365362
+                },
+                {
+                    "relay_id": 5365360
+                },
+                {
+                    "relay_id": 5365359
+                },
+                {
+                    "relay_id": 5365358
+                },
+                {
+                    "relay_id": 5365357
+                },
+                {
+                    "relay_id": 5365353
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "Banen 1 t/m 4",
+            "relay_ids": [
+                {
+                    "relay_id": 5365353
+                },
+                {
+                    "relay_id": 5365357
+                },
+                {
+                    "relay_id": 5365358
+                },
+                {
+                    "relay_id": 5365359
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "name": "Banen 5 en 6",
+            "relay_ids": [
+                {
+                    "relay_id": 5365360
+                },
+                {
+                    "relay_id": 5365362
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "name": "Banen 7 t/m 10",
+            "relay_ids": [
+                {
+                    "relay_id": 5365328
+                },
+                {
+                    "relay_id": 5365322
+                },
+                {
+                    "relay_id": 5365324
+                },
+                {
+                    "relay_id": 5365330
+                },
+                {
+                    "relay_id": 5365332
+                },
+                {
+                    "relay_id": 5365345
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "name": "Banen 7 en 8",
+            "relay_ids": [
+                {
+                    "relay_id": 5365328
+                },
+                {
+                    "relay_id": 5365322
+                },
+                {
+                    "relay_id": 5365324
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "name": "Banen 9 en 10",
+            "relay_ids": [
+                {
+                    "relay_id": 5365330
+                },
+                {
+                    "relay_id": 5365332
+                },
+                {
+                    "relay_id": 5365345
+                }
+            ]
+        }
+    ]
+}

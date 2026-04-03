@@ -1,0 +1,40 @@
+{
+    "groups": [
+        {
+            "id": 1,
+            "name": "Banen 1 t/m 4",
+            "relay_ids": [
+                {
+                    "relay_id": 5365353
+                },
+                {
+                    "relay_id": 5365357
+                },
+                {
+                    "relay_id": 5365358
+                },
+                {
+                    "relay_id": 5365359
+                }
+             ]
+        },
+        {
+            "id": 2,
+            "name": "Banen 4 t/m 1",
+            "relay_ids": [
+                {
+                    "relay_id": 5365359
+                },
+                {
+                    "relay_id": 5365358
+                },
+                {
+                    "relay_id": 5365357
+                },
+                {
+                    "relay_id": 5365353
+                }
+            ]
+        }
+      ]
+}

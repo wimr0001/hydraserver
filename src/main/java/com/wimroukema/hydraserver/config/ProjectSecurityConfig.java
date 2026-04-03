@@ -29,20 +29,18 @@ public class ProjectSecurityConfig {
 				.requestMatchers("/status").authenticated().requestMatchers("/startProcess").authenticated()
 				.requestMatchers("/stopProcess").authenticated().requestMatchers("/stopRelay").authenticated()
 				.requestMatchers("/removeRelay").authenticated().requestMatchers("/clearProcess").authenticated()
-				.requestMatchers("/actives").authenticated()
-				.requestMatchers("/repeatProcess").authenticated()
-				.requestMatchers("/addRelays").authenticated()
-				.requestMatchers("/actuallog").authenticated()
-				.requestMatchers("/otherlog").authenticated()
-				.requestMatchers("/getBatchTimes").authenticated()
-				.requestMatchers("/postBatchTimes").authenticated()
-				.requestMatchers("/backgroundProcess").authenticated());
+				.requestMatchers("/actives").authenticated().requestMatchers("/repeatProcess").authenticated()
+				.requestMatchers("/addRelays").authenticated().requestMatchers("/actuallog").authenticated()
+				.requestMatchers("/otherlog").authenticated().requestMatchers("/getBatchTimes").authenticated()
+				.requestMatchers("/postBatchTimes").authenticated().requestMatchers("/backgroundProcess")
+				.authenticated().requestMatchers("/getRelays").authenticated().requestMatchers("/storeRelays")
+				.authenticated());
 		http.httpBasic(Customizer.withDefaults());
 		return http.build();
 	}
 
-    @Bean
-    InMemoryUserDetailsManager userDetailsService() {
+	@Bean
+	InMemoryUserDetailsManager userDetailsService() {
 
 		UserDetails admin = User.withUsername("wim").password(passwordEncoder().encode("abc123wim")).roles("USER")
 				.build();
@@ -50,24 +48,24 @@ public class ProjectSecurityConfig {
 		return new InMemoryUserDetailsManager(admin);
 	}
 
-    @Bean
-    PasswordEncoder passwordEncoder() {
+	@Bean
+	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
-    @Bean
-    UrlBasedCorsConfigurationSource corsConfigurationSource() {
+	@Bean
+	UrlBasedCorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration config = new CorsConfiguration();
 
-		config.setAllowedOrigins(List.of("https://wimroukema.nl", "https://vps.wimroukema.nl", "https://linode.wimroukema.nl", "https://tennis.wimroukema.nl"));
-
+		config.setAllowedOrigins(List.of("http://localhost", "https://wimroukema.nl", "https://vps.wimroukema.nl",
+				"https://linode.wimroukema.nl", "https://tennis.wimroukema.nl"));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
 		config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
 		config.setAllowCredentials(true);
-	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-	    source.registerCorsConfiguration("/**", config);
-	    return source;
-	}		
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		return source;
+	}
 }

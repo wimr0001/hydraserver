@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -25,28 +26,19 @@ public class FileService {
 	private String logFile;
 	@Value("${file.batchtimes}")
 	private String batchtimes;
-	@Value("${log.path}")
-	private String logPath;
+	
+	private static String CONFIG_HEADER = "{\"time\": 1690699123,\"nextpoll\": 60,\"message\": \"\",\"simRelays\": 1,\"options\": 1,\"stupdate\": 0,\"master\": 0,\"master_timer\": 0,\"master_post_timer\": 0,\"expanders\": [],\"sensors\": [],";
+	
+	private String baseDir = System.getProperty("user.dir");
 
-	public String getRelaysInput() throws Exception {
-		File file = new File(fileRelays);
-		BufferedReader reader = new BufferedReader(new FileReader(file));
-		String line = null;
-		StringBuffer sb = new StringBuffer();
-		while ((line = reader.readLine()) != null) {
-			sb.append(line.trim());
-		}
-		reader.close();
+	public String getRelaysAsJsonString(ArrayList<Relay> list) throws Exception {
 		ObjectMapper mapper = new ObjectMapper();
-		RelayList list = mapper.readValue(sb.toString(), RelayList.class);
-		ArrayList<Relay> extractedList = list.removeSuspendedRelays();
-		String jsonString = mapper.writeValueAsString(extractedList);
+		String jsonString = mapper.writeValueAsString(list);
 		return jsonString;
 	}
-
-	public ArrayList<Relay> getRelayList() throws Exception {
+	public RelayList getAllRelays() throws IOException {
 		File file = new File(fileRelays);
-		BufferedReader reader = new BufferedReader(new FileReader(file));
+		BufferedReader reader = new BufferedReader(new FileReader(baseDir+"/"+file));
 		String line = null;
 		StringBuffer sb = new StringBuffer();
 		while ((line = reader.readLine()) != null) {
@@ -55,12 +47,11 @@ public class FileService {
 		reader.close();
 		ObjectMapper mapper = new ObjectMapper();
 		RelayList list = mapper.readValue(sb.toString(), RelayList.class);
-		ArrayList<Relay> extractedList = list.removeSuspendedRelays();
-		return extractedList;
+		return list;
 	}
 	public String getGroupsInput() throws Exception {
 		File file = new File(fileGroups);
-		BufferedReader reader = new BufferedReader(new FileReader(file));
+		BufferedReader reader = new BufferedReader(new FileReader(baseDir+"/"+file));
 		String line = null;
 		StringBuffer sb = new StringBuffer();
 		while ((line = reader.readLine()) != null) {
@@ -72,17 +63,17 @@ public class FileService {
 	}
 
 	public ArrayList<LogMessage> getActuallog() throws Exception {
-		BufferedReader reader = new BufferedReader(new FileReader(logFile));
+		BufferedReader reader = new BufferedReader(new FileReader(baseDir+"/"+logFile));
 		return this.getLogMessages(reader);
 	}
 
 	public ArrayList<LogMessage> getLogFromFile(String filename) throws Exception {
-		BufferedReader reader = new BufferedReader(new FileReader(logPath + filename));
+		BufferedReader reader = new BufferedReader(new FileReader(filename));
 		return this.getLogMessages(reader);
 	}
 	public String[] getBatchtimes() throws Exception {
 		File file = new File(batchtimes);
-		BufferedReader reader = new BufferedReader(new FileReader(file));
+		BufferedReader reader = new BufferedReader(new FileReader(baseDir+"/"+file));
 		String line = null;
 		StringBuffer sb = new StringBuffer();
 		while ((line = reader.readLine()) != null) {
@@ -104,6 +95,18 @@ public class FileService {
 		FileWriter writer = new FileWriter(new File(batchtimes));
 		writer.write(csv);
 		writer.flush();
+		writer.close();
+	}
+	public void storeRelays(String jsonString) throws IOException {
+	
+		File file = new File(fileRelays);
+		FileWriter writer = new FileWriter(baseDir+"/"+file);
+		StringBuffer sb = new StringBuffer();
+		sb.append(CONFIG_HEADER);
+		sb.append("\"relays\":");
+		sb.append(jsonString);
+		sb.append("}");
+		writer.write(sb.toString());
 		writer.close();
 	}
 

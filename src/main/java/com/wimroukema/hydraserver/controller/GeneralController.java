@@ -126,15 +126,12 @@ public class GeneralController {
 		}
 	}
 
-	@PostMapping(path = "/actives", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, Object>> getActives(@RequestBody WateringRequest request) {
+	@GetMapping(path = "/actives", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Map<String, Object>> getActives() {
 		Map<String, Object> map = new HashMap<String, Object>(6);
 		try {
 			map.put("active_relays", relayService.getActiveRelays());
 			String username = relayService.getUsername();
-			if (username == null) {
-				username = "";
-			}
 			map.put("username", username);
 			map.put("errormsg", "");
 			return ResponseEntity.status(HttpStatus.OK).body(map);
@@ -144,8 +141,8 @@ public class GeneralController {
 		}
 	}
 
-	@PostMapping(path = "/clearProcess", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, Object>> clearProcess(@RequestBody WateringRequest request) {
+	@GetMapping(path = "/clearProcess", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Map<String, Object>> clearProcess() {
 		Map<String, Object> map = new HashMap<String, Object>(6);
 		try {
 			relayService.clear();
@@ -281,12 +278,12 @@ public class GeneralController {
 				}
 			}
 			case 2: {
-				if (m >= 15 && m <= 30) {
+				if (m >= 15 && m < 30) {
 					mustExecute = true;
 				}
 			}
 			case 3: {
-				if (m >= 30 && m <= 45) {
+				if (m >= 30 && m < 45) {
 					mustExecute = true;
 				}
 			}

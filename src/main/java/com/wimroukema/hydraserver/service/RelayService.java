@@ -53,6 +53,8 @@ public class RelayService {
 	private String apiKey;
 	@Value("${notification_link}")
 	private String notificationLink;
+	@Value("${mailsender.sendmail}")
+	private boolean sendMail;
 
 	private String username;
 	private List<Relay> relays = new ArrayList<Relay>(0);
@@ -407,9 +409,9 @@ public class RelayService {
 	}
 
 	private void writeNotificationFile() throws Exception {
-//		if (username.equals(rootUser) || username.equals(batchUser)) {
-//			return;
-//		}
+		if (username.equals(rootUser)) {
+			return;
+		}
 		String fn = notificationFile.replace("{number}", Integer.toString(notificationNumber));
 		notificationNumber++;
 		FileWriter writer = new FileWriter(fn);
@@ -428,10 +430,12 @@ public class RelayService {
 		writer.write(jacksonData);
 		writer.flush();
 		writer.close();
-		try {
-			mailSender.sendMail(sb.toString());
-		} catch (Exception e) {
-			// no mail sent, it's a pity but no serious proble
+		if (sendMail) {
+			try {
+				mailSender.sendMail(sb.toString());
+			} catch (Exception e) {
+				// no mail sent, it's a pity but no serious problem
+			}
 		}
 	}
 }

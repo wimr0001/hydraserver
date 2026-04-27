@@ -65,7 +65,7 @@ public class RelayService {
 	private FileWriter writer;
 	private FileWriter errorWriter;
 	private int notificationNumber = 0;
-	private ZoneService zs;
+	private ZoneService zs = new ZoneService(this);
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void onReady() {
@@ -121,8 +121,8 @@ public class RelayService {
 	}
 
 	public List<Relay> startProcess() throws Exception {
-		this.zs = new ZoneService(this);
 		try {
+			zs.setStopProcess(false);
 			this.setStartpoint();
 			this.writeNotificationFile();
 		} catch (Exception e) {
@@ -172,19 +172,28 @@ public class RelayService {
 			}
 			i++;
 		}
-		thread.interrupt();
+		try {
+			thread.interrupt();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+
+		}
 		this.doStopCall(relayId);
 		Relay relay = this.getRelay(relayId);
 		this.writeLogMessage(relay, false, true);
-
-		if (i < relays.size() - 1) {
-			this.setStartpoint();
-			thread = new Thread(zs);
-			thread.start();
-		} else {
-			zs.setStopProcess(true);
-			if (batch) {
-				relays = new ArrayList<Relay>(0);
+		if (!stopProcess) {
+			if (i < relays.size() - 1) {
+				this.setStartpoint();
+			} else {
+				zs.setStopProcess(true);
+				try {
+					thread.interrupt();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+				}
+				if (batch) {
+					relays = new ArrayList<Relay>(0);
+				}
 			}
 		}
 	}
@@ -223,6 +232,11 @@ public class RelayService {
 
 				}
 			}
+		}
+		try {
+			thread.interrupt();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
 		}
 		if (batch) {
 			relays = new ArrayList<Relay>(0);
@@ -281,10 +295,17 @@ public class RelayService {
 		Relay relay = this.getNext();
 		if (relay == null) {
 			zs.setStopProcess(true);
+			this.processEnded();
+			try {
+				thread.interrupt();
+			} catch (Exception e) {
+				// nothing to do
+			}
 			return;
 		}
 		relay.setActive(2);
 		this.adjustRelayList();
+		zs.setRelay(relay);
 		this.doStartCall(relay);
 		this.writeLogMessage(relay, true, false);
 	}
@@ -348,18 +369,6 @@ public class RelayService {
 		}
 		for (Relay relay : relays) {
 			if (relay.getActive() < 2) {
-				return relay;
-			}
-		}
-		return null;
-	}
-
-	public Relay getActiveRelay() {
-		if (relays.size() == 0) {
-			return null;
-		}
-		for (Relay relay : relays) {
-			if (relay.getActive() == 2) {
 				return relay;
 			}
 		}

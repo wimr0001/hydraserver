@@ -18,15 +18,12 @@ public class ZoneService implements Runnable {
 	public void setStopProcess(boolean b) {
 		stopProcess = b;
 	}
+	public void setRelay(Relay relay) {
+		this.relay = relay;
+	}
 
 	public void run() {
 		while (!stopProcess) {
-			relay = relayService.getActiveRelay();
-			if (relay == null) {
-				stopProcess = true;
-				relayService.processEnded();
-				return;
-			}
 			try {
 				Thread.sleep(relay.getRun()*1000);
 		//		System.out.println("sleep ended of seconds: "+relay.getRun());

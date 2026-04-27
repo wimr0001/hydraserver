@@ -295,12 +295,13 @@ public class RelayService {
 		Relay relay = this.getNext();
 		if (relay == null) {
 			zs.setStopProcess(true);
-			this.processEnded();
 			try {
 				thread.interrupt();
+				thread = null;
 			} catch (Exception e) {
 				// nothing to do
 			}
+			this.processEnded();			
 			return;
 		}
 		relay.setActive(2);

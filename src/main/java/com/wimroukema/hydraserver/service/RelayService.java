@@ -65,6 +65,7 @@ public class RelayService {
 	private FileWriter writer;
 	private FileWriter errorWriter;
 	private int notificationNumber = 0;
+	private ZoneService zs;
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void onReady() {
@@ -120,15 +121,15 @@ public class RelayService {
 	}
 
 	public List<Relay> startProcess() throws Exception {
+		this.zs = new ZoneService(this);
 		try {
-			this.writeNotificationFile();
 			this.setStartpoint();
+			this.writeNotificationFile();
 		} catch (Exception e) {
 			this.relays = new ArrayList<Relay>(0);
 			throw e;
 		}
 
-		ZoneService zs = new ZoneService(this);
 		thread = new Thread(zs);
 		thread.start();
 		return this.relays;
@@ -150,7 +151,6 @@ public class RelayService {
 			this.relays = new ArrayList<Relay>(0);
 			throw e;
 		}
-		ZoneService zs = new ZoneService(this);
 		thread = new Thread(zs);
 		thread.start();
 	}
@@ -172,20 +172,19 @@ public class RelayService {
 			}
 			i++;
 		}
+		thread.interrupt();
 		this.doStopCall(relayId);
 		Relay relay = this.getRelay(relayId);
 		this.writeLogMessage(relay, false, true);
-		thread.interrupt();
-		if (!stopProcess) {
-			if (i < relays.size() - 1) {
-				this.setStartpoint();
-				ZoneService zs = new ZoneService(this);
-				thread = new Thread(zs);
-				thread.start();
-			} else {
-				if (batch) {
-					relays = new ArrayList<Relay>(0);
-				}
+
+		if (i < relays.size() - 1) {
+			this.setStartpoint();
+			thread = new Thread(zs);
+			thread.start();
+		} else {
+			zs.setStopProcess(true);
+			if (batch) {
+				relays = new ArrayList<Relay>(0);
 			}
 		}
 	}
@@ -271,6 +270,7 @@ public class RelayService {
 				} else {
 					relay.setRunLeft(relay.getRun());
 					relay.setStartPlanned(ldt.toEpochSecond(ZoneOffset.UTC));
+					relay.setActive(1);
 					runLeft = relay.getRunLeft();
 				}
 			}
@@ -280,6 +280,7 @@ public class RelayService {
 	public void setStartpoint() throws Exception {
 		Relay relay = this.getNext();
 		if (relay == null) {
+			zs.setStopProcess(true);
 			return;
 		}
 		relay.setActive(2);
@@ -386,7 +387,11 @@ public class RelayService {
 		int m = ldt.getMonthValue();
 		int d = ldt.getDayOfMonth();
 		lm.setLogDate(h + "-" + String.format("%02d", m) + "-" + String.format("%02d", d));
-		lm.setUsername(this.username);
+		if (this.username.equals("")) {
+			lm.setUsername("xxx");
+		} else {
+			lm.setUsername(this.username);
+		}
 		try {
 			writer.write(lm.toCsvString());
 			writer.flush();

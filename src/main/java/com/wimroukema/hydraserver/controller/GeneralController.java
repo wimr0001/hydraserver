@@ -56,9 +56,16 @@ public class GeneralController {
 				map.put("username", relayService.getUsername());
 			}
 			map.put("errormsg", "");
+			ArrayList<LogMessage> logLines = fileService.getActuallog();
+			long started = 0;
+			if (logLines.size() > 0) {
+				LogMessage lm = logLines.get(logLines.size() - 1);
+				started = lm.getStartedOn();
+			}
+			map.put("lastStarted", Long.valueOf(started));
 			return ResponseEntity.status(HttpStatus.OK).body(map);
 		} catch (Exception e) {
-			 e.printStackTrace();
+			e.printStackTrace();
 			map.put("errormsg", "Opvragen informatie is mislukt");
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 		}
@@ -69,6 +76,9 @@ public class GeneralController {
 		Map<String, Object> map = new HashMap<String, Object>(6);
 		try {
 			if (request.getRelays().size() < 1) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+			}
+			if (relayService.getActiveRelays().size() > 0) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
 			relayService.setRelays(request.getRelays());
@@ -269,33 +279,37 @@ public class GeneralController {
 			}
 			if (timeCode == 0) {
 				result = "Must not execute";
-			}
-			boolean mustExecute = false;
-			switch (timeCode) {
-			case 1: {
-				if (m <= 15) {
-					mustExecute = true;
+			} else {
+				boolean mustExecute = false;
+				switch (timeCode) {
+				case 1: {
+					if (m < 15) {
+						mustExecute = true;
+					}
+					break;
 				}
-			}
-			case 2: {
-				if (m >= 15 && m < 30) {
-					mustExecute = true;
+				case 2: {
+					if (m >= 15 && m < 30) {
+						mustExecute = true;
+					}
+					break;
 				}
-			}
-			case 3: {
-				if (m >= 30 && m < 45) {
-					mustExecute = true;
+				case 3: {
+					if (m >= 30 && m < 45) {
+						mustExecute = true;
+					}
+					break;
 				}
-			}
-			case 4: {
-				if (m >= 45) {
-					mustExecute = true;
+				case 4: {
+					if (m >= 45) {
+						mustExecute = true;
+					}
 				}
-			}
 
-			}
-			if (!mustExecute) {
-				result = "Not executed";
+				}
+				if (!mustExecute) {
+					result = "Not executed";
+				}
 			}
 			if (!result.equals("OK")) {
 				return ResponseEntity.status(HttpStatus.OK).body(result);

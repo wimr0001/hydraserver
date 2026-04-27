@@ -57,7 +57,7 @@ public class ProjectSecurityConfig {
 	UrlBasedCorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration config = new CorsConfiguration();
 
-		config.setAllowedOrigins(List.of("http://localhost", "https://wimroukema.nl", "https://vps.wimroukema.nl",
+		config.setAllowedOrigins(List.of("http://localhost:41161", "https://wimroukema.nl", "https://vps.wimroukema.nl",
 				"https://linode.wimroukema.nl", "https://tennis.wimroukema.nl"));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 

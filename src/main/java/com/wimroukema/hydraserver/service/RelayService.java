@@ -107,14 +107,12 @@ public class RelayService {
 		adjustRelayList();
 		for (Relay relay : relays) {
 			if (relay.getActive() == 2) {
-				if (relay.getRunLeft() < 2) {
-					try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e) {
-						// do nothing
-					}
+				if (relay.getRunLeft() < 1) {
+					relay.setActive(9);
+					relay.setRunLeft(0);
+				} else {
+					break;
 				}
-				break;
 			}
 		}
 		return relays;
@@ -144,6 +142,7 @@ public class RelayService {
 			relay.setActive(1);
 			relay.setRunLeft(relay.getRun());
 			relay.setStartedOn(0);
+			relay.setStoppedOn(0);
 		}
 		try {
 			this.setStartpoint();

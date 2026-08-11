@@ -85,6 +85,9 @@ public class GeneralController {
 			relayService.setBatch(request.isBatch());
 			relayService.setDelay(request.getDelay());
 			relayService.setUsername(request.getUsername());
+			if (relayService.getUsername().equals("")) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+			}
 			map.put("active_relays", relayService.startProcess());
 			map.put("errormsg", "");
 			return ResponseEntity.status(HttpStatus.OK).body(map);

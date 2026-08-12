@@ -105,16 +105,17 @@ public class RelayService {
 			return relays;
 		}
 		adjustRelayList();
-		for (Relay relay : relays) {
-			if (relay.getActive() == 2) {
-				if (relay.getRunLeft() < 1) {
-					relay.setActive(9);
-					relay.setRunLeft(0);
-				} else {
-					break;
-				}
-			}
-		}
+//		for (Relay relay : relays) {
+//			if (relay.getActive() == 2) {
+//				if (relay.getRunLeft() < 3) {
+//					try {
+//						Thread.sleep(3000);
+//					} catch (InterruptedException e) {
+//						// do nothing
+//					}
+//				}
+//			}
+//		}
 		return relays;
 	}
 
@@ -150,6 +151,7 @@ public class RelayService {
 			this.relays = new ArrayList<Relay>(0);
 			throw e;
 		}
+		zs.setStopProcess(false);
 		thread = new Thread(zs);
 		thread.start();
 	}
@@ -300,7 +302,7 @@ public class RelayService {
 			} catch (Exception e) {
 				// nothing to do
 			}
-			this.processEnded();			
+			this.processEnded();
 			return;
 		}
 		relay.setActive(2);

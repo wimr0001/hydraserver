@@ -3,6 +3,7 @@ package com.wimroukema.hydraserver.controller;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,8 +50,9 @@ public class GeneralController {
 			map.put("relays", fileService.getRelaysAsJsonString(list));
 			String groups = fileService.getGroupsInput();
 			map.put("groups", groups);
-			map.put("active_relays", relayService.getActiveRelays());
-			if (relayService.getActiveRelays().size() == 0) {
+			List<Relay> actives = relayService.getActiveRelays();
+			map.put("active_relays", actives);
+			if (actives.size() == 0) {
 				map.put("username", request.getUsername());
 			} else {
 				map.put("username", relayService.getUsername());
@@ -82,7 +84,6 @@ public class GeneralController {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
 			relayService.setRelays(request.getRelays());
-			relayService.setBatch(request.isBatch());
 			relayService.setDelay(request.getDelay());
 			relayService.setUsername(request.getUsername());
 			if (relayService.getUsername().equals("")) {

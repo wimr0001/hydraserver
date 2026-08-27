@@ -105,21 +105,23 @@ public class RelayService {
 			return relays;
 		}
 		adjustRelayList();
-//		for (Relay relay : relays) {
-//			if (relay.getActive() == 2) {
-//				if (relay.getRunLeft() < 3) {
-//					try {
-//						Thread.sleep(3000);
-//					} catch (InterruptedException e) {
-//						// do nothing
-//					}
-//				}
-//			}
-//		}
 		return relays;
 	}
 
 	public List<Relay> startProcess() throws Exception {
+		for (Relay relay : relays) {
+			relay.setRunLeft(relay.getRun());
+			relay.setStartedOn(0);
+			relay.setStartPlanned(0);
+			relay.setStoppedOn(0);
+		}
+		while (!zs.isProcessStopped()) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// go on
+			}
+		}
 		try {
 			zs.setStopProcess(false);
 			this.setStartpoint();
@@ -132,28 +134,6 @@ public class RelayService {
 		thread = new Thread(zs);
 		thread.start();
 		return this.relays;
-	}
-
-	public void restartProcess() throws Exception {
-		if (relays.size() == 0) {
-			throw new Exception("Cannot repeat the process");
-		}
-		// set activecode to 1
-		for (Relay relay : relays) {
-			relay.setActive(1);
-			relay.setRunLeft(relay.getRun());
-			relay.setStartedOn(0);
-			relay.setStoppedOn(0);
-		}
-		try {
-			this.setStartpoint();
-		} catch (Exception e) {
-			this.relays = new ArrayList<Relay>(0);
-			throw e;
-		}
-		zs.setStopProcess(false);
-		thread = new Thread(zs);
-		thread.start();
 	}
 
 	private void stopRelay(int relayId, boolean stopProcess) throws Exception {
@@ -258,6 +238,7 @@ public class RelayService {
 			relays = new ArrayList<Relay>(0);
 			username = "";
 		}
+		this.batch = false;
 	}
 
 	public void clear() {

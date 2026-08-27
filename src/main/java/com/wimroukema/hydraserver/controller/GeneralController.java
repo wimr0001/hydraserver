@@ -80,6 +80,9 @@ public class GeneralController {
 			if (request.getRelays().size() < 1) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
+			if (request.isRepeat()) {
+				relayService.clear();
+			}
 			if (relayService.getActiveRelays().size() > 0) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
@@ -99,8 +102,21 @@ public class GeneralController {
 		}
 	}
 
+	@GetMapping(path = "/stopProcess", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Map<String, Object>> stopProcess() {
+		Map<String, Object> map = new HashMap<String, Object>(6);
+		try {
+			map.put("active_relays", relayService.stopProcess());
+			map.put("errormsg", "");
+			return ResponseEntity.status(HttpStatus.OK).body(map);
+		} catch (Exception e) {
+			map.put("errormsg", "Stoppen van sproeien is mislukt");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+		}
+	}
+
 	@PostMapping(path = "/stopProcess", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, Object>> stopProcess(@RequestBody WateringRequest request) {
+	public ResponseEntity<Map<String, Object>> stopProcess(@RequestBody WateringRequest request) { // just for old client
 		Map<String, Object> map = new HashMap<String, Object>(6);
 		try {
 			map.put("active_relays", relayService.stopProcess());
@@ -174,20 +190,6 @@ public class GeneralController {
 		}
 	}
 
-	@PostMapping(path = "/repeatProcess", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, Object>> repeatProcess(@RequestBody WateringRequest request) {
-		Map<String, Object> map = new HashMap<String, Object>(6);
-		try {
-			relayService.restartProcess();
-			map.put("active_relays", relayService.getRelays());
-			map.put("username", relayService.getUsername());
-			map.put("errormsg", "");
-			return ResponseEntity.status(HttpStatus.OK).body(map);
-		} catch (Exception e) {
-			map.put("errormsg", "herhaalde uitvoering is mislukt");
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
-		}
-	}
 
 	@PostMapping(path = "/addRelays", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Map<String, Object>> addRelays(@RequestBody WateringRequest request) {

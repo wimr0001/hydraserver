@@ -7,7 +7,7 @@ import com.wimroukema.hydraserver.model.Relay;
 
 public class ZoneService implements Runnable {
 
-	private boolean stopProcess = false;
+	private boolean stopProcess = true;
 	private Relay relay;
 
 	private RelayService relayService;
@@ -17,6 +17,9 @@ public class ZoneService implements Runnable {
 	}
 	public void setStopProcess(boolean b) {
 		stopProcess = b;
+	}
+	public boolean isProcessStopped() {
+		return stopProcess;
 	}
 	public void setRelay(Relay relay) {
 		this.relay = relay;

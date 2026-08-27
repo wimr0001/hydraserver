@@ -14,7 +14,7 @@
 		{
 			"name": "test 7 &8 rond",
 			"relay_id": 5365322,
-			"run": 120,
+			"run": 20,
 			"type": 1,
 			"time": 1576800000,
 			"period": 259200
@@ -22,7 +22,7 @@
 		{
 			"name": "test 1",
 			"relay_id": 5365353,
-			"run": 180,
+			"run": 20,
 			"type": 1,
 			"time": 1576800000,
 			"period": 259200
@@ -30,7 +30,7 @@
 		{
 			"name": "test 2",
 			"relay_id": 5365357,
-			"run": 180,
+			"run": 20,
 			"type": 1,
 			"time": 1576800000,
 			"period": 259200
@@ -38,7 +38,7 @@
 		{
 			"name": "test 3",
 			"relay_id": 5365358,
-			"run": 180,
+			"run": 20,
 			"type": 1,
 			"time": 1576800000,
 			"period": 259200
@@ -46,7 +46,7 @@
 		{
 			"name": "test 4",
 			"relay_id": 5365359,
-			"run": 60,
+			"run": 20,
 			"type": 1,
 			"time": 1576800000,
 			"period": 259200

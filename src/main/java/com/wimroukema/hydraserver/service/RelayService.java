@@ -108,8 +108,8 @@ public class RelayService {
 		return relays;
 	}
 
-	public List<Relay> startProcess() throws Exception {
-		for (Relay relay : relays) {
+	public List<Relay> startProcess(ArrayList<Relay> list, int delay, String username) throws Exception {
+		for (Relay relay : list) {
 			relay.setRunLeft(relay.getRun());
 			relay.setStartedOn(0);
 			relay.setStartPlanned(0);
@@ -122,6 +122,9 @@ public class RelayService {
 				// go on
 			}
 		}
+		this.relays = list;
+		this.delay = delay;
+		this.username = username;
 		try {
 			zs.setStopProcess(false);
 			this.setStartpoint();

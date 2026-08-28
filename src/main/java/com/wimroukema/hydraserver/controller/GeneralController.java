@@ -80,19 +80,13 @@ public class GeneralController {
 			if (request.getRelays().size() < 1) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
-			if (request.isRepeat()) {
-				relayService.clear();
-			}
-			if (relayService.getActiveRelays().size() > 0) {
+			if (relayService.getActiveRelays().size() > 0 && !request.isRepeat()) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
-			relayService.setRelays(request.getRelays());
-			relayService.setDelay(request.getDelay());
-			relayService.setUsername(request.getUsername());
-			if (relayService.getUsername().equals("")) {
+			if (request.getUsername().equals("") || request.getRelays().size() < 1) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
-			map.put("active_relays", relayService.startProcess());
+			map.put("active_relays", relayService.startProcess(request.getRelays(), request.getDelay(), request.getUsername()));
 			map.put("errormsg", "");
 			return ResponseEntity.status(HttpStatus.OK).body(map);
 		} catch (Exception e) {
@@ -333,10 +327,8 @@ public class GeneralController {
 				relay.setActive(1);
 			}
 
-			relayService.setRelays(list);
 			relayService.setBatch(true);
-			relayService.setUsername("batch");
-			relayService.startProcess();
+			relayService.startProcess(list, 0, "batch");
 			return ResponseEntity.status(HttpStatus.OK).body(result);
 		} catch (Exception e) {
 			e.printStackTrace();

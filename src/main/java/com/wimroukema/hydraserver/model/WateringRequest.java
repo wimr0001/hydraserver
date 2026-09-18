@@ -12,5 +12,7 @@ public class WateringRequest {
 	private ArrayList<Relay> relays;
 	private int delay;
 	private boolean sendMessage;
-	private boolean repeat;
+	private int round = 0;
+	private int maxRounds = 2;
+	private boolean restart = false;
 }

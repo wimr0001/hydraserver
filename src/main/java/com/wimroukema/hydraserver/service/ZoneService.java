@@ -16,6 +16,7 @@ public class ZoneService implements Runnable {
 		this.relayService = rs;
 	}
 	public void setStopProcess(boolean b) {
+		System.out.println("stopped process "+b);
 		stopProcess = b;
 	}
 	public boolean isProcessStopped() {
@@ -29,7 +30,6 @@ public class ZoneService implements Runnable {
 		while (!stopProcess) {
 			try {
 				Thread.sleep(relay.getRun()*1000);
-		//		System.out.println("sleep ended of seconds: "+relay.getRun());
 				relay.setActive(9);
 				LocalDateTime ldt = LocalDateTime.now();
 				relay.setStoppedOn(ldt.toEpochSecond(ZoneOffset.UTC));
@@ -38,6 +38,7 @@ public class ZoneService implements Runnable {
 				try {
 					relayService.setStartpoint();
 				} catch (Exception e) {
+					e.printStackTrace();
 					// stop the process
 					stopProcess = true;
 				}

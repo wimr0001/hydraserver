@@ -76,17 +76,27 @@ public class GeneralController {
 	@PostMapping(path = "/startProcess", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Map<String, Object>> startProcess(@RequestBody WateringRequest request) {
 		Map<String, Object> map = new HashMap<String, Object>(6);
+
 		try {
 			if (request.getRelays().size() < 1) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
-			if (relayService.getActiveRelays().size() > 0 && !request.isRepeat()) {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+			if (request.isRestart()) {
+				if (relayService.isActive()) {
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+				}
+			} else {
+				if (relayService.getActiveRelays().size() > 0) {
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+				}
 			}
 			if (request.getUsername().equals("") || request.getRelays().size() < 1) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
-			map.put("active_relays", relayService.startProcess(request.getRelays(), request.getDelay(), request.getUsername()));
+			relayService.setRound(request.getRound());
+			relayService.setMaxRounds(request.getMaxRounds());
+			map.put("active_relays",
+					relayService.startProcess(request.getRelays(), request.getDelay(), request.getUsername()));
 			map.put("errormsg", "");
 			return ResponseEntity.status(HttpStatus.OK).body(map);
 		} catch (Exception e) {
@@ -110,7 +120,8 @@ public class GeneralController {
 	}
 
 	@PostMapping(path = "/stopProcess", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, Object>> stopProcess(@RequestBody WateringRequest request) { // just for old client
+	public ResponseEntity<Map<String, Object>> stopProcess(@RequestBody WateringRequest request) { // just for old
+																									// client
 		Map<String, Object> map = new HashMap<String, Object>(6);
 		try {
 			map.put("active_relays", relayService.stopProcess());
@@ -158,6 +169,7 @@ public class GeneralController {
 			String username = relayService.getUsername();
 			map.put("username", username);
 			map.put("errormsg", "");
+			map.put("round", relayService.getRound());
 			return ResponseEntity.status(HttpStatus.OK).body(map);
 		} catch (Exception e) {
 			map.put("errormsg", "Opvragen sproei-informatie is mislukt");
@@ -184,12 +196,14 @@ public class GeneralController {
 		}
 	}
 
-
 	@PostMapping(path = "/addRelays", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Map<String, Object>> addRelays(@RequestBody WateringRequest request) {
 		Map<String, Object> map = new HashMap<String, Object>(6);
 		try {
 			if (request.getRelays().size() < 1) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+			}
+			if (!relayService.isActive()) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
 			}
 			relayService.addRelays(request.getRelays());

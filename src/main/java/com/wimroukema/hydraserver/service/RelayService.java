@@ -26,6 +26,7 @@ import com.wimroukema.hydraserver.model.LogMessage;
 import com.wimroukema.hydraserver.model.Relay;
 
 import lombok.Data;
+import reactor.core.publisher.Mono;
 
 @ApplicationScope
 @Data
@@ -65,6 +66,8 @@ public class RelayService {
 	private FileWriter writer;
 	private FileWriter errorWriter;
 	private int notificationNumber = 0;
+	private int round = 0;
+	private int maxRounds = 2;
 	private ZoneService zs = new ZoneService(this);
 
 	@EventListener(ApplicationReadyEvent.class)
@@ -108,19 +111,28 @@ public class RelayService {
 		return relays;
 	}
 
-	public List<Relay> startProcess(ArrayList<Relay> list, int delay, String username) throws Exception {
+	public void repeatProcess() {
+		round++;
+		try {
+			startProcess(this.relays, 0, this.username);
+		} catch (Exception e) {
+			round = 0;
+			try {
+				this.stopProcess();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+	}
+
+	public List<Relay> startProcess(List<Relay> list, int delay, String username) throws Exception {
 		for (Relay relay : list) {
 			relay.setRunLeft(relay.getRun());
 			relay.setStartedOn(0);
 			relay.setStartPlanned(0);
 			relay.setStoppedOn(0);
-		}
-		while (!zs.isProcessStopped()) {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// go on
-			}
+			relay.setActive(1);
 		}
 		this.relays = list;
 		this.delay = delay;
@@ -130,19 +142,21 @@ public class RelayService {
 			this.setStartpoint();
 			this.writeNotificationFile();
 		} catch (Exception e) {
-			this.relays = new ArrayList<Relay>(0);
-			throw e;
+			e.printStackTrace();
 		}
-
-		thread = new Thread(zs);
-		thread.start();
+		if (round < 2) {
+			thread = new Thread(zs);
+			thread.start();
+		}
 		return this.relays;
 	}
 
 	private void stopRelay(int relayId, boolean stopProcess) throws Exception {
-		int i = 0;
+		int i = -1;
+		round = 0;
 		LocalDateTime ldt = LocalDateTime.now();
 		for (Relay relay : relays) {
+			i++;
 			if (relay.getRelayId() == relayId) {
 				if (relay.getActive() == 2) {
 					relay.setActive(3);
@@ -154,7 +168,6 @@ public class RelayService {
 					throw new Exception("Kan het sproeien van deze baan niet stoppen");
 				}
 			}
-			i++;
 		}
 		try {
 			thread.interrupt();
@@ -207,6 +220,7 @@ public class RelayService {
 	}
 
 	public List<Relay> stopProcess() throws Exception {
+		round = 0;
 		for (Relay relay : relays) {
 			if (relay.getActive() == 2) {
 				this.stopRelay(relay.getRelayId(), true);
@@ -264,6 +278,10 @@ public class RelayService {
 					} else {
 						int n = (int) (ldt.toEpochSecond(ZoneOffset.UTC) - relay.getStartedOn());
 						relay.setRunLeft(relay.getRun() - n);
+						if (relay.getRunLeft() < 0) {
+							relay.setRunLeft(0);
+							relay.setActive(9);
+						}
 						runLeft = relay.getRunLeft();
 					}
 				} else {
@@ -279,6 +297,10 @@ public class RelayService {
 	public void setStartpoint() throws Exception {
 		Relay relay = this.getNext();
 		if (relay == null) {
+			if (round > 0 && round < maxRounds) {
+				this.repeatProcess();
+				return;
+			}
 			zs.setStopProcess(true);
 			try {
 				thread.interrupt();
@@ -286,6 +308,7 @@ public class RelayService {
 			} catch (Exception e) {
 				// nothing to do
 			}
+
 			this.processEnded();
 			return;
 		}
@@ -299,54 +322,34 @@ public class RelayService {
 	private void doStartCall(Relay relay) throws Exception {
 		String uri = zoneUrl + "?api_key=" + apiKey + "&action=run&period_id=999&custom=" + relay.getRun()
 				+ "&relay_id=" + relay.getRelayId();
-		String resp = webClient.get().uri(uri).retrieve()
-//				.onStatus(HttpStatusCode::is4xxClientError,
-//						clientResponse -> clientResponse.bodyToMono(String.class)
-//								.flatMap(body -> Mono.error(new RuntimeException("Client Error: " + body))))
-//				.onStatus(HttpStatusCode::is5xxServerError,
-//						clientResponse -> clientResponse.bodyToMono(String.class)
-//								.flatMap(body -> Mono.error(new RuntimeException("Server Error: " + body))))
-				.bodyToMono(String.class)
-//				.doOnError(WebClientResponseException.class, e -> {
-//					// Handle error and log it
-//					System.err.println("Error occurred: " + e.getStatusCode() + " - " + e.getResponseBodyAsString());
-//				})
-				.block();
-		ObjectMapper mapper = new ObjectMapper();
-		HydraResponse hydraResponse;
-		try {
-			hydraResponse = mapper.readValue(resp, HydraResponse.class);
-		} catch (JsonMappingException e) {
-			e.printStackTrace();
-			System.out.println(e.toString());
-			throw new Exception("Exception in Hunter server");
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-			System.out.println(e.toString());
-			throw new Exception("Exception in Hunter server");
-		}
-		if (hydraResponse.getMessageType().equals("error")) {
-			System.out.println(hydraResponse.getMessageType());
-			throw new Exception("Exception in Hunter server");
-		}
+		webClient.get().uri(uri).retrieve().bodyToMono(HydraResponse.class).doOnNext(response -> {
+			if (response.getMessageType().equals("error")) {
+				round = 0;
+				try {
+					stopProcess();
+				} catch (Exception e) {
+					relays = new ArrayList<Relay>(0);
+				}
+			}
+		}).doOnError(error -> {
+			System.err.println("Error: " + error.getMessage());
+		}).subscribe();
 	}
 
 	private void doStopCall(int relayId) throws Exception {
 		String uri = zoneUrl + "?api_key=" + apiKey + "&action=stop" + "&relay_id=" + relayId;
-		String resp = webClient.get().uri(uri).retrieve().bodyToMono(String.class).block();
-
-		ObjectMapper mapper = new ObjectMapper();
-		HydraResponse hydraResponse;
-		try {
-			hydraResponse = mapper.readValue(resp, HydraResponse.class);
-		} catch (JsonMappingException e) {
-			throw new Exception("Exception in Hunter server");
-		} catch (JsonProcessingException e) {
-			throw new Exception("Exception in Hunter server");
-		}
-		if (hydraResponse.getMessageType().equals("error")) {
-			throw new Exception("Exception in Hunter server");
-		}
+		webClient.get().uri(uri).retrieve().bodyToMono(HydraResponse.class).doOnNext(response -> {
+			if (response.getMessageType().equals("error")) {
+				round = 0;
+				try {
+					stopProcess();
+				} catch (Exception e) {
+					relays = new ArrayList<Relay>(0);
+				}
+			}
+		}).doOnError(error -> {
+			System.err.println("Error: " + error.getMessage());
+		}).subscribe();
 	}
 
 	public Relay getNext() {
@@ -438,4 +441,5 @@ public class RelayService {
 			}
 		}
 	}
+
 }
